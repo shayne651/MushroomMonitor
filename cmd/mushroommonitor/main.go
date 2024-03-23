@@ -3,24 +3,33 @@ package main
 import (
 	"database/sql"
 	"log"
+	"net/http"
 
-	config_service "github.com/shayne651/MushroomMonitor/interal/services/config"
-	message_service "github.com/shayne651/MushroomMonitor/interal/services/message"
+	mushroom_handler "github.com/shayne651/MushroomMonitor/internal/handler/mushroom"
+	config_service "github.com/shayne651/MushroomMonitor/internal/services/config"
+	message_service "github.com/shayne651/MushroomMonitor/internal/services/message"
+	mushroom_service "github.com/shayne651/MushroomMonitor/internal/services/mushroom"
 
-	_ "modernc.org/sqlite"
+	"github.com/golang-migrate/migrate/v4"
+	"github.com/golang-migrate/migrate/v4/database/sqlite3"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 func main() {
 	config := config_service.Config{}
 	config.Initialize()
 
-	_ = initializeDB()
+	db := initializeDB()
 	mq := initializeMQTT(config)
 	mq.InitializeConnection("wkjnkjn")
+
+	initializeRestAPI(db)
+	select {}
 }
 
 func initializeDB() *sql.DB {
-	db, err := sql.Open("sqlite", "../../mush.db")
+	db, err := sql.Open("sqlite3", "./mush.db")
 	if err != nil {
 		log.Panic("Connection to sqlite failed\n", err)
 		return nil
@@ -33,11 +42,47 @@ func initializeDB() *sql.DB {
 	}
 
 	log.Println("DB connection successful")
+
+	//TODO: Add migrations and db maintenance to prune records over x days old
+	dbMigrations(db)
 	return db
+}
+
+func dbMigrations(db *sql.DB) {
+	log.Println("Running DB Migrations")
+	driver, err := sqlite3.WithInstance(db, &sqlite3.Config{})
+	if err != nil {
+		log.Fatal("Error getting db driver for migrations", err)
+	}
+
+	m, err := migrate.NewWithDatabaseInstance(
+		"file://db/migrations/",
+		"sqlite3", driver)
+	if err != nil {
+		log.Fatal("Error migrating DB", err)
+	}
+
+	err = m.Up()
+	if err != nil {
+		log.Println("Error updating db")
+		err = m.Down()
+		if err != nil {
+			log.Println("Error downgrading db")
+		}
+	}
+	log.Println("Migration Successful")
 }
 
 func initializeMQTT(config config_service.Config) *message_service.MqttService {
 	mq := message_service.MqttService{}
 	mq.SetLoginDetails(config.MQTTHost, config.MQTTPort, config.MQTTUser, config.MQTTPass)
 	return &mq
+}
+
+func initializeRestAPI(db *sql.DB) {
+	mux := http.NewServeMux()
+	ms := mushroom_service.MushroomService{DB: db}
+	mh := mushroom_handler.MushroomHandler{MushroomService: &ms}
+	mh.InitializeRestAPI(mux)
+	log.Panic(http.ListenAndServe(":7891", mux))
 }
