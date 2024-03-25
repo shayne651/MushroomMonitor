@@ -10,6 +10,10 @@ import (
 	message_service "github.com/shayne651/MushroomMonitor/internal/services/message"
 	mushroom_service "github.com/shayne651/MushroomMonitor/internal/services/mushroom"
 
+  stage_service "github.com/shayne651/MushroomMonitor/internal/services/stage"
+  stage_handler "github.com/shayne651/MushroomMonitor/internal/handler/stage"
+
+
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/sqlite3"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
@@ -84,5 +88,18 @@ func initializeRestAPI(db *sql.DB) {
 	ms := mushroom_service.MushroomService{DB: db}
 	mh := mushroom_handler.MushroomHandler{MushroomService: &ms}
 	mh.InitializeRestAPI(mux)
+
+  initializeStage(db, mux)
+
 	log.Panic(http.ListenAndServe(":7891", mux))
+}
+
+func initializeMushroom(db *sql.DB, mux *http.ServeMux) {
+
+}
+
+func initializeStage(db *sql.DB, mux *http.ServeMux){
+  stageService := stage_service.StageService{DB: db}
+  stageHandler := stage_handler.StageHandler{StageService: &stageService}
+  stageHandler.Initialize(mux)
 }
