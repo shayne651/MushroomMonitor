@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS fea(
 );
 
 CREATE TABLE IF NOT EXISTS grow (
-  grow_uuid TEXT PRIMARY KEY,
+  name TEXT PRIMARY KEY,
   automation_uuid TEXT,
   mushroom_uuid TEXT,
   stage_uuid TEXT,

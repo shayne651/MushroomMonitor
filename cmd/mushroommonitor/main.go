@@ -10,9 +10,11 @@ import (
 	message_service "github.com/shayne651/MushroomMonitor/internal/services/message"
 	mushroom_service "github.com/shayne651/MushroomMonitor/internal/services/mushroom"
 
-  stage_service "github.com/shayne651/MushroomMonitor/internal/services/stage"
-  stage_handler "github.com/shayne651/MushroomMonitor/internal/handler/stage"
+	stage_handler "github.com/shayne651/MushroomMonitor/internal/handler/stage"
+	stage_service "github.com/shayne651/MushroomMonitor/internal/services/stage"
 
+	grow_handler "github.com/shayne651/MushroomMonitor/internal/handler/grow"
+	grow_service "github.com/shayne651/MushroomMonitor/internal/services/grow"
 
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/sqlite3"
@@ -89,7 +91,9 @@ func initializeRestAPI(db *sql.DB) {
 	mh := mushroom_handler.MushroomHandler{MushroomService: &ms}
 	mh.InitializeRestAPI(mux)
 
-  initializeStage(db, mux)
+	initializeStage(db, mux)
+
+	initializeGrow(db, mux)
 
 	log.Panic(http.ListenAndServe(":7891", mux))
 }
@@ -98,8 +102,14 @@ func initializeMushroom(db *sql.DB, mux *http.ServeMux) {
 
 }
 
-func initializeStage(db *sql.DB, mux *http.ServeMux){
-  stageService := stage_service.StageService{DB: db}
-  stageHandler := stage_handler.StageHandler{StageService: &stageService}
-  stageHandler.Initialize(mux)
+func initializeStage(db *sql.DB, mux *http.ServeMux) {
+	stageService := stage_service.StageService{DB: db}
+	stageHandler := stage_handler.StageHandler{StageService: &stageService}
+	stageHandler.Initialize(mux)
+}
+
+func initializeGrow(db *sql.DB, mux *http.ServeMux) {
+	growService := grow_service.GrowService{DB: db}
+	growHandler := grow_handler.GrowHandler{GrowService: growService}
+	growHandler.Initialize(mux)
 }
