@@ -26,7 +26,7 @@ func main() {
 	config := config_service.Config{}
 	config.Initialize()
 
-	db := initializeDB()
+	db := initializeDB(config)
 	mq := initializeMQTT(config)
 	mq.InitializeConnection("wkjnkjn")
 
@@ -34,7 +34,7 @@ func main() {
 	select {}
 }
 
-func initializeDB() *sql.DB {
+func initializeDB(config config_service.Config) *sql.DB {
 	db, err := sql.Open("sqlite3", "./mush.db")
 	if err != nil {
 		log.Panic("Connection to sqlite failed\n", err)
@@ -50,11 +50,11 @@ func initializeDB() *sql.DB {
 	log.Println("DB connection successful")
 
 	//TODO: Add migrations and db maintenance to prune records over x days old
-	dbMigrations(db)
+	dbMigrations(db, config)
 	return db
 }
 
-func dbMigrations(db *sql.DB) {
+func dbMigrations(db *sql.DB, config config_service.Config) {
 	log.Println("Running DB Migrations")
 	driver, err := sqlite3.WithInstance(db, &sqlite3.Config{})
 	if err != nil {
@@ -62,7 +62,7 @@ func dbMigrations(db *sql.DB) {
 	}
 
 	m, err := migrate.NewWithDatabaseInstance(
-		"file://db/migrations/",
+		"file://" + config.MigrationLocation,
 		"sqlite3", driver)
 	if err != nil {
 		log.Fatal("Error migrating DB", err)
