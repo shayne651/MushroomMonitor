@@ -1,0 +1,9 @@
+services:
+  mushroom_monitor:
+    image: shayne651/mushroom_monitor:latest
+    volumes:
+      - ~/mm-db/mush.db:/src/mush.db
+    ports:
+      - 7891:7891
+    environment:
+      - MIGRATION_LOCATION=/db/migrations

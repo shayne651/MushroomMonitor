@@ -1,4 +1,4 @@
-package message
+package message_service
 
 import (
 	"log"
@@ -9,6 +9,7 @@ import (
 type IMqttService interface {
 	InitializeConnection(clientID string)
 	PublishMessage(topic string, message []byte)
+	SubscribeToTopic(topic string, handler func(client mqtt.Client, msg mqtt.Message))
 }
 
 type MqttService struct {
