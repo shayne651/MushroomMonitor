@@ -1,5 +1,6 @@
 services:
   mushroom_monitor:
+    container_name: mushroom_monitor
     image: shayne651/mushroom_monitor:latest
     volumes:
       - mush_db:/src/mush.db
