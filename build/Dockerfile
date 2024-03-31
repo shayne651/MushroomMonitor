@@ -41,6 +41,8 @@ RUN adduser \
 
 RUN chown 10001:10001 -R /src
 
+RUN touch /src/mush.db
+
 USER appuser
 
 COPY ./db/migrations /db/migrations
