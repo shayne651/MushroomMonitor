@@ -39,9 +39,9 @@ RUN adduser \
     --uid "${UID}" \
     appuser
 
-RUN chown 10001:10001 -R /src
-
 RUN touch /src/mush.db
+
+RUN chown -R appuser:appuser /src
 
 USER appuser
 
