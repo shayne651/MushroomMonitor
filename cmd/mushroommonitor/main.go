@@ -16,6 +16,9 @@ import (
 	grow_handler "github.com/shayne651/MushroomMonitor/internal/handler/grow"
 	grow_service "github.com/shayne651/MushroomMonitor/internal/services/grow"
 
+	sensor_handlers "github.com/shayne651/MushroomMonitor/internal/handler/sensor"
+	sensor_service "github.com/shayne651/MushroomMonitor/internal/services/sensor"
+
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/sqlite3"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
@@ -30,7 +33,7 @@ func main() {
 	mq := initializeMQTT(config)
 	mq.InitializeConnection("wkjnkjn")
 
-	initializeRestAPI(db)
+	initializeRestAPI(db, mq)
 	select {}
 }
 
@@ -62,7 +65,7 @@ func dbMigrations(db *sql.DB, config config_service.Config) {
 	}
 
 	m, err := migrate.NewWithDatabaseInstance(
-		"file://" + config.MigrationLocation,
+		"file://"+config.MigrationLocation,
 		"sqlite3", driver)
 	if err != nil {
 		log.Fatal("Error migrating DB", err)
@@ -70,10 +73,10 @@ func dbMigrations(db *sql.DB, config config_service.Config) {
 
 	err = m.Up()
 	if err != nil {
-		log.Println("Error updating db")
+		log.Println("Error updating db: ", err)
 		err = m.Down()
 		if err != nil {
-			log.Println("Error downgrading db")
+			log.Println("Error downgrading db: ", err)
 		}
 	}
 	log.Println("Migration Successful")
@@ -85,21 +88,28 @@ func initializeMQTT(config config_service.Config) *message_service.MqttService {
 	return &mq
 }
 
-func initializeRestAPI(db *sql.DB) {
+func initializeRestAPI(db *sql.DB, mq *message_service.MqttService) {
 	mux := http.NewServeMux()
-	ms := mushroom_service.MushroomService{DB: db}
-	mh := mushroom_handler.MushroomHandler{MushroomService: &ms}
-	mh.InitializeRestAPI(mux)
+
+	initializeMushroom(db, mux)
 
 	initializeStage(db, mux)
 
 	initializeGrow(db, mux)
 
+	initializeTemp(db, mq, mux)
+
+	initializeHumidity(db, mq, mux)
+
+	initializeFea(db, mq, mux)
+
 	log.Panic(http.ListenAndServe(":7891", mux))
 }
 
 func initializeMushroom(db *sql.DB, mux *http.ServeMux) {
-
+	ms := mushroom_service.MushroomService{DB: db}
+	mh := mushroom_handler.MushroomHandler{MushroomService: &ms}
+	mh.InitializeRestAPI(mux)
 }
 
 func initializeStage(db *sql.DB, mux *http.ServeMux) {
@@ -113,3 +123,27 @@ func initializeGrow(db *sql.DB, mux *http.ServeMux) {
 	growHandler := grow_handler.GrowHandler{GrowService: growService}
 	growHandler.Initialize(mux)
 }
+
+func initializeTemp(db *sql.DB, mq *message_service.MqttService, mux *http.ServeMux) {
+	tempService := sensor_service.TempService{DB: db}
+	tempHandler := sensor_handlers.TempHandler{Ts: tempService, MQ: mq}
+	tempHandler.InitializeTemp(mux)
+}
+
+func initializeHumidity(db *sql.DB, mq *message_service.MqttService, mux *http.ServeMux) {
+	humidityService := sensor_service.HumidityService{DB: db}
+	humidityHandler := sensor_handlers.HumidityHandler{Hs: humidityService, MQ: mq}
+	humidityHandler.InitializeHumidity(mux)
+}
+
+func initializeFea(db *sql.DB, mq *message_service.MqttService, mux *http.ServeMux) {
+	feaService := sensor_service.FeaService{DB: db}
+	feaHandler := sensor_handlers.FeaHandler{Fs: feaService, MQ: mq}
+	feaHandler.InitializeFea(mux)
+}
+
+// func initializeGraph(db *sql.DB, mux *http.ServeMux) {
+// 	graphService := graph_service.GrowService{DB: db}
+// 	graphHandler := graph_handler.GrowHandler{GrowService: graphService}
+// 	graphHandler.Initialize(mux)
+// }
