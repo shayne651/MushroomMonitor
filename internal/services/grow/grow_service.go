@@ -8,7 +8,8 @@ import (
 )
 
 type IGrowService interface {
-	getAllGrows()
+	GetAllGrows()
+	GetFullGrow(id uuid.UUID) (Grow, error)
 }
 
 type GrowService struct {
@@ -16,10 +17,39 @@ type GrowService struct {
 }
 
 type Grow struct {
-	Name       string
-	Mushroom   uuid.UUID
-	Stage      uuid.UUID
-	Automation uuid.UUID
+	Name       string    `json:"name"`
+	Mushroom   uuid.UUID `json:"mushroom"`
+	Stage      uuid.UUID `json:"stage"`
+	Automation uuid.UUID `json:"automation"`
+}
+
+type FullGrow struct {
+	GrowName     string  `json:"growName"`
+	MushroomName string  `json:"mushroomName"`
+	StageName    string  `json:"stageName"`
+	MinTemp      float32 `json:"minTemp"`
+	MaxTemp      float32 `json:"maxTemp"`
+	MinHumidity  float32 `json:"minHumidity"`
+	MaxHumidity  float32 `json:"maxHumidity"`
+	Fea          float32 `json:"fea"`
+}
+
+func (gs *GrowService) GetFullGrow(name string) (FullGrow, error) {
+	row := gs.DB.QueryRow(
+		"SELECT g.name, m.name, s.name, s.min_temp, s.max_temp, s.min_humidity, s.max_humidity, s.fea "+
+			"FROM grow g "+
+			"JOIN "+
+			"mushroom m ON g.mushroom_uuid = m.mushroom_uuid "+
+			"JOIN "+
+			"stage s ON g.stage_uuid = s.stage_uuid AND s.mushroom_uuid = m.mushroom_uuid "+
+			"WHERE g.name = ?", name)
+	var g FullGrow
+	err := row.Scan(&g.GrowName, &g.MushroomName, &g.StageName, &g.MinTemp, &g.MaxTemp, &g.MinHumidity, &g.MaxHumidity, g.Fea)
+	if err != nil {
+		log.Println("Error getting full grow for ", name, ": ", err)
+		return FullGrow{}, err
+	}
+	return g, nil
 }
 
 func (gs *GrowService) GetAllGrows() ([]Grow, error) {

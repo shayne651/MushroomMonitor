@@ -49,7 +49,7 @@ func (ms *MqttService) PublishMessage(topic string, message []byte) {
 
 func (ms *MqttService) SubscribeToTopic(topic string, handler func(client mqtt.Client, msg mqtt.Message)) {
 	client := ms.InitializeConnection("main-reading-" + topic)
-
+	log.Println("Starting mqtt connection to", topic)
 	go func() {
 		token := client.Subscribe(topic, 0, handler)
 

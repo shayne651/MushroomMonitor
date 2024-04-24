@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS temp(
   temp_uuid TEXT,
   grow_uuid TEXT,
   value REAL,
-  record_date TEXT,
+  record_date INTEGER,
   PRIMARY KEY (temp_uuid, grow_uuid)
 );
 
@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS humidity(
   humidity_uuid TEXT,
   grow_uuid TEXT,
   value REAL,
-  record_date TEXT,
+  record_date INTEGER,
   PRIMARY KEY (humidity_uuid, grow_uuid)
 );
 
@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS fea(
   fea_uuid TEXT,
   grow_uuid TEXT,
   runtime REAL,
-  record_date TEXT,
+  record_date INTEGER,
   PRIMARY KEY (fea_uuid, grow_uuid)
 );
 
