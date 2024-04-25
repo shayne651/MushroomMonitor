@@ -21,7 +21,19 @@ jobs:
     - name: Build docker container
       run: |
         docker build -t ${{ secrets.CR_USER }}/mushroom_monitor:latest . -f ./build/Dockerfile
-        docker push ${{ secrets.CR_USER }}/mushroom_monitor:latest
+        docker push ${{ secrets.CR_USER }}/mushroom_monitor:latestu
+
+    - name: Replace docker compose placeholders
+      env: 
+        PASSWORD: ${{ secrets.PASSWORD }}
+        USER: ${{ secrets.USER }}
+        HOST: ${{ secrets.HOST }}
+        PORT: ${{ secrets.PORT }}
+      run: |
+        sed -i 's/<PASSWORD>/'$PASSWORD'/g' ${{ github.workspace }}/build/compose.yaml
+        sed -i 's/<USER>/'$USER'/g' ${{ github.workspace }}/build/compose.yaml
+        sed -i 's/<HOST>/'$HOST'/g' ${{ github.workspace }}/build/compose.yaml
+        sed -i 's/<PORT>/'$PORT'/g' ${{ github.workspace }}/build/compose.yaml
 
     - name: Run docker compose
       run: |

@@ -8,5 +8,9 @@ services:
       - 7891:7891
     environment:
       - MIGRATION_LOCATION=/db/migrations
+      - MQTT_HOST=<HOST>
+      - MQTT_PORT=<PORT
+      - MQTT_USER=<USER>
+      - MQTT_PASSWORD=<PASSWORD>
 volumes:
   mush_db:
