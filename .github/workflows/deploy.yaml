@@ -21,7 +21,7 @@ jobs:
     - name: Build docker container
       run: |
         docker build -t ${{ secrets.CR_USER }}/mushroom_monitor:latest . -f ./build/Dockerfile
-        docker push ${{ secrets.CR_USER }}/mushroom_monitor:latestu
+        docker push ${{ secrets.CR_USER }}/mushroom_monitor:latest
 
     - name: Replace docker compose placeholders
       env: 
