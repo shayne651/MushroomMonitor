@@ -21,7 +21,7 @@ type TempHandler struct {
 }
 
 func (th *TempHandler) InitializeTemp(mux *http.ServeMux) {
-	th.MQ.SubscribeToTopic("temp-confirm", th.handleConfirmTemp)
+	th.MQ.SubscribeToTopic("mushroom_monitor-test.temp", th.handleConfirmTemp)
 
 	mux.HandleFunc("GET /temp/{id}/{days}", th.getAllTemp)
 	mux.HandleFunc("GET /temp/last/{id}", th.getLastTemp)

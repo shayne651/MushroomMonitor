@@ -44,7 +44,7 @@ func (gs *GrowService) GetFullGrow(name string) (FullGrow, error) {
 			"stage s ON g.stage_uuid = s.stage_uuid AND s.mushroom_uuid = m.mushroom_uuid "+
 			"WHERE g.name = ?", name)
 	var g FullGrow
-	err := row.Scan(&g.GrowName, &g.MushroomName, &g.StageName, &g.MinTemp, &g.MaxTemp, &g.MinHumidity, &g.MaxHumidity, g.Fea)
+	err := row.Scan(&g.GrowName, &g.MushroomName, &g.StageName, &g.MinTemp, &g.MaxTemp, &g.MinHumidity, &g.MaxHumidity, &g.Fea)
 	if err != nil {
 		log.Println("Error getting full grow for ", name, ": ", err)
 		return FullGrow{}, err
