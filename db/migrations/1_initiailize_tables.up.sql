@@ -17,26 +17,26 @@ CREATE TABLE IF NOT EXISTS stage(
 
 CREATE TABLE IF NOT EXISTS temp(
   temp_uuid TEXT,
-  grow_uuid TEXT,
+  grow_name TEXT,
   value REAL,
   record_date INTEGER,
-  PRIMARY KEY (temp_uuid, grow_uuid)
+  PRIMARY KEY (temp_uuid, grow_name)
 );
 
 CREATE TABLE IF NOT EXISTS humidity(
   humidity_uuid TEXT,
-  grow_uuid TEXT,
+  grow_name TEXT,
   value REAL,
   record_date INTEGER,
-  PRIMARY KEY (humidity_uuid, grow_uuid)
+  PRIMARY KEY (humidity_uuid, grow_name)
 );
 
 CREATE TABLE IF NOT EXISTS fea(
   fea_uuid TEXT,
-  grow_uuid TEXT,
+  grow_name TEXT,
   runtime REAL,
   record_date INTEGER,
-  PRIMARY KEY (fea_uuid, grow_uuid)
+  PRIMARY KEY (fea_uuid, grow_name)
 );
 
 CREATE TABLE IF NOT EXISTS grow (

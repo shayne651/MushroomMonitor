@@ -62,6 +62,7 @@ func dbMigrations(db *sql.DB, config config_service.Config) {
 	driver, err := sqlite3.WithInstance(db, &sqlite3.Config{})
 	if err != nil {
 		log.Fatal("Error getting db driver for migrations", err)
+		return
 	}
 
 	m, err := migrate.NewWithDatabaseInstance(
@@ -69,15 +70,18 @@ func dbMigrations(db *sql.DB, config config_service.Config) {
 		"sqlite3", driver)
 	if err != nil {
 		log.Fatal("Error migrating DB", err)
+		return
 	}
 
 	err = m.Up()
-	if err != nil {
+	if err != migrate.ErrNoChange && err != nil {
 		log.Println("Error updating db: ", err)
 		err = m.Down()
 		if err != nil {
 			log.Println("Error downgrading db: ", err)
+			return
 		}
+		return
 	}
 	log.Println("Migration Successful")
 }
@@ -95,7 +99,7 @@ func initializeRestAPI(db *sql.DB, mq *message_service.MqttService) {
 
 	initializeStage(db, mux)
 
-	initializeGrow(db, mux)
+	initializeGrow(db, mq, mux)
 
 	initializeTemp(db, mq, mux)
 
@@ -118,9 +122,9 @@ func initializeStage(db *sql.DB, mux *http.ServeMux) {
 	stageHandler.Initialize(mux)
 }
 
-func initializeGrow(db *sql.DB, mux *http.ServeMux) {
+func initializeGrow(db *sql.DB, mq *message_service.MqttService, mux *http.ServeMux) {
 	growService := grow_service.GrowService{DB: db}
-	growHandler := grow_handler.GrowHandler{GrowService: growService}
+	growHandler := grow_handler.GrowHandler{GrowService: growService, MQ: mq}
 	growHandler.Initialize(mux)
 }
 
