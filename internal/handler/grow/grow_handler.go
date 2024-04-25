@@ -19,6 +19,7 @@ func (gh *GrowHandler) Initialize(mux *http.ServeMux) {
 	mux.HandleFunc("GET /grows", gh.handleGetGrows)
 	mux.HandleFunc("GET /grow/{name}", gh.handleGetGrow)
 	mux.HandleFunc("POST /grow", gh.handleSaveGrow)
+	mux.HandleFunc("GET /grow/full/{name}", gh.handleGetFullGrow)
 }
 
 func (gh *GrowHandler) handleGetGrows(w http.ResponseWriter, request *http.Request) {
@@ -51,10 +52,24 @@ func (gh *GrowHandler) handleGetGrow(w http.ResponseWriter, request *http.Reques
 	w.Write(growJson)
 }
 
+func (gh *GrowHandler) handleGetFullGrow(w http.ResponseWriter, request *http.Request) {
+	name := request.PathValue("name")
+	grow, _ := gh.GrowService.GetFullGrow(name)
+
+	growJson, err := json.Marshal(grow)
+	if err != nil {
+		log.Println("Error marshaling full grow: ", name, " ", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(growJson)
+}
+
 func (gh *GrowHandler) handleSaveGrow(w http.ResponseWriter, request *http.Request) {
 	var g grow_service.Grow
 	json.NewDecoder(request.Body).Decode(&g)
-  log.Println(g)
+	log.Println(g)
 	err := gh.GrowService.SaveGrow(g)
 	if err != nil {
 		log.Println("Error saving grow", err)

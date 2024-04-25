@@ -21,7 +21,7 @@ type HumidityHandler struct {
 }
 
 func (hh *HumidityHandler) InitializeHumidity(mux *http.ServeMux) {
-	hh.MQ.SubscribeToTopic("humidity-confirm", hh.handleConfirmHumidity)
+	hh.MQ.SubscribeToTopic("mushroom_monitor-test.humidity", hh.handleConfirmHumidity)
 
 	mux.HandleFunc("GET /humidity/{id}/{days}", hh.getAllHumidity)
 	mux.HandleFunc("GET /humidity/last/{id}", hh.getLastHumidity)
