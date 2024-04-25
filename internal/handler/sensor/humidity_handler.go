@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/google/uuid"
@@ -23,12 +24,12 @@ type HumidityHandler struct {
 func (hh *HumidityHandler) InitializeHumidity(mux *http.ServeMux) {
 	hh.MQ.SubscribeToTopic("mushroom_monitor-test.humidity", hh.handleConfirmHumidity)
 
-	mux.HandleFunc("GET /humidity/{id}/{days}", hh.getAllHumidity)
-	mux.HandleFunc("GET /humidity/last/{id}", hh.getLastHumidity)
+	mux.HandleFunc("GET /humidity/{name}/{days}", hh.getAllHumidity)
+	mux.HandleFunc("GET /humidity/last/{name}", hh.getLastHumidity)
 }
 
 func (hh *HumidityHandler) getAllHumidity(w http.ResponseWriter, request *http.Request) {
-	id := request.PathValue("id")
+	name := request.PathValue("name")
 	days, err := strconv.Atoi(request.PathValue("days"))
 
 	if err != nil {
@@ -38,15 +39,7 @@ func (hh *HumidityHandler) getAllHumidity(w http.ResponseWriter, request *http.R
 		return
 	}
 
-	idParsed, err := uuid.Parse(id)
-	if err != nil {
-		log.Println("Error parsing uuid", err)
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("Invalid uuid"))
-		return
-	}
-
-	humidity, err := hh.Hs.GetRecentHumidity(days, idParsed)
+	humidity, err := hh.Hs.GetRecentHumidity(days, name)
 	humidityJson, err := json.Marshal(humidity)
 	if err != nil {
 		log.Println("Error marshaling humidity", err)
@@ -58,15 +51,9 @@ func (hh *HumidityHandler) getAllHumidity(w http.ResponseWriter, request *http.R
 }
 
 func (hh *HumidityHandler) getLastHumidity(w http.ResponseWriter, request *http.Request) {
-	id := request.PathValue("id")
-	idParsed, err := uuid.Parse(id)
-	if err != nil {
-		log.Println("Error parsing uuid", err)
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("Invalid uuid"))
-		return
-	}
-	humidity, err := hh.Hs.GetLastHumidity(idParsed)
+	name := request.PathValue("name")
+
+	humidity, _ := hh.Hs.GetLastHumidity(name)
 	humidityJson, err := json.Marshal(humidity)
 	if err != nil {
 		log.Println("Error marshaling humidity", err)
@@ -79,11 +66,15 @@ func (hh *HumidityHandler) getLastHumidity(w http.ResponseWriter, request *http.
 
 func (hh *HumidityHandler) handleConfirmHumidity(client mqtt.Client, msg mqtt.Message) {
 	humidity := sensor_service.Humidity{}
-	body := msg.Payload()
-	err := json.Unmarshal(body, &humidity)
+	humString := string(msg.Payload())
+
+	h, err := strconv.ParseFloat(humString, 32)
 	if err != nil {
-		log.Println("Error getting humidity from mqtt", err)
+		log.Println("Error parsing humidity", err)
 	}
 	humidity.HumidityID = uuid.New()
+	humidity.Value = float32(h)
+	humidity.RecordDate = int(time.Now().Unix())
+	humidity.GrowName = "test"
 	hh.Hs.SaveHumidity(humidity)
 }

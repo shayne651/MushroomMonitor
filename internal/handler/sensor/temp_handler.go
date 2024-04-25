@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/google/uuid"
@@ -23,12 +24,12 @@ type TempHandler struct {
 func (th *TempHandler) InitializeTemp(mux *http.ServeMux) {
 	th.MQ.SubscribeToTopic("mushroom_monitor-test.temp", th.handleConfirmTemp)
 
-	mux.HandleFunc("GET /temp/{id}/{days}", th.getAllTemp)
-	mux.HandleFunc("GET /temp/last/{id}", th.getLastTemp)
+	mux.HandleFunc("GET /temp/{name}/{days}", th.getAllTemp)
+	mux.HandleFunc("GET /temp/last/{name}", th.getLastTemp)
 }
 
 func (th *TempHandler) getAllTemp(w http.ResponseWriter, request *http.Request) {
-	id := request.PathValue("id")
+	name := request.PathValue("name")
 	days, err := strconv.Atoi(request.PathValue("days"))
 
 	if err != nil {
@@ -37,16 +38,7 @@ func (th *TempHandler) getAllTemp(w http.ResponseWriter, request *http.Request) 
 		w.Write([]byte("Invalid days"))
 		return
 	}
-
-	idParsed, err := uuid.Parse(id)
-	if err != nil {
-		log.Println("Error parsing uuid", err)
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("Invalid uuid"))
-		return
-	}
-
-	temp, err := th.Ts.GetRecentTemp(days, idParsed)
+	temp, err := th.Ts.GetRecentTemp(days, name)
 	tempJson, err := json.Marshal(temp)
 	if err != nil {
 		log.Println("Error marshaling temp", err)
@@ -58,15 +50,8 @@ func (th *TempHandler) getAllTemp(w http.ResponseWriter, request *http.Request) 
 }
 
 func (th *TempHandler) getLastTemp(w http.ResponseWriter, request *http.Request) {
-	id := request.PathValue("id")
-	idParsed, err := uuid.Parse(id)
-	if err != nil {
-		log.Println("Error parsing uuid", err)
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("Invalid uuid"))
-		return
-	}
-	temp, err := th.Ts.GetLastTemp(idParsed)
+	name := request.PathValue("name")
+	temp, err := th.Ts.GetLastTemp(name)
 	tempJson, err := json.Marshal(temp)
 	if err != nil {
 		log.Println("Error marshaling temp", err)
@@ -80,12 +65,16 @@ func (th *TempHandler) getLastTemp(w http.ResponseWriter, request *http.Request)
 func (th *TempHandler) handleConfirmTemp(client mqtt.Client, msg mqtt.Message) {
 	log.Println("Received temp comfirm")
 	temp := sensor_service.Temp{}
-	body := msg.Payload()
 
-	err := json.Unmarshal(body, &temp)
+	tempString := string(msg.Payload())
+
+	t, err := strconv.ParseFloat(tempString, 32)
 	if err != nil {
-		log.Println("Error getting temp from mqtt", err)
+		log.Println("Error parsing temp", err)
 	}
 	temp.TempID = uuid.New()
+	temp.Value = float32(t)
+	temp.RecordDate = int(time.Now().Unix())
+	temp.GrowName = "test"
 	th.Ts.SaveTemp(temp)
 }
